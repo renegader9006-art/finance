@@ -5,6 +5,7 @@ const config = JSON.parse(await readFile(configPath, "utf8"));
 
 config.name = "finance";
 config.topLevelName = "finance";
+config.compatibility_flags = [...new Set(config.compatibility_flags ?? [])];
 config.d1_databases = [
   {
     binding: "DB",
