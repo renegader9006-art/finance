@@ -67,6 +67,40 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PUT(request: Request) {
+  const user = await getSupabaseUser(request);
+  if (!user) return Response.json({ error: "Требуется вход" }, { status: 401 });
+  try {
+    const payload = await request.json() as Record<string, unknown>;
+    const id = String(payload.id ?? "").trim();
+    const title = String(payload.title ?? "").trim();
+    const category = String(payload.category ?? "Другое").trim();
+    const kind = String(payload.kind ?? "");
+    const amount = Math.round(Number(payload.amount));
+    const date = String(payload.date ?? "");
+
+    if (!id || !title || !category || !kinds.has(kind) || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return Response.json({ error: "Проверьте данные операции" }, { status: 400 });
+    }
+
+    const db = getDb();
+    const existing = await db.select({ id: transactions.id }).from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, user.id))).limit(1);
+    if (!existing.length) return Response.json({ error: "Операция не найдена" }, { status: 404 });
+
+    const updated = {
+      title,
+      category,
+      kind: kind as "income" | "expense" | "debt" | "saving",
+      amount,
+      occurredAt: date,
+    };
+    await db.update(transactions).set(updated).where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+    return Response.json({ transaction: { id, ...updated, date: updated.occurredAt } });
+  } catch (error) {
+    return Response.json({ error: errorMessage(error) }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   const user = await getSupabaseUser(request);
   if (!user) return Response.json({ error: "Требуется вход" }, { status: 401 });

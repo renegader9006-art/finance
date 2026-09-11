@@ -166,6 +166,71 @@ button, input, select { letter-spacing: 0; }
 
 .mobile-add svg { width: 22px; height: 22px; }
 
+.ledger-app { min-height: 100dvh; }
+.ledger-header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgb(24 32 37 / 9%); background: rgb(255 255 255 / 94%); backdrop-filter: blur(18px); }
+.ledger-header-inner { display: flex; height: 60px; max-width: 920px; margin: 0 auto; align-items: center; justify-content: space-between; padding: 0 16px; }
+.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 8px; background: #172229; color: #fff; }
+.ledger-content { width: min(920px, 100%); margin: 0 auto; padding: 20px 16px 44px; }
+.ledger-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.ledger-toolbar h1 { margin: 0; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; letter-spacing: -0.02em; }
+.eyebrow, .sheet-kicker { margin: 0 0 4px; color: #69777d; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.month-switcher { display: flex; min-height: 42px; align-items: center; gap: 2px; border: 1px solid #dce3e5; border-radius: 8px; background: #fff; padding: 2px 4px; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.month-switcher button { min-width: 36px; }
+.totals-strip { display: grid; grid-template-columns: minmax(200px, 1.5fr) repeat(4, 1fr); overflow: hidden; margin-bottom: 18px; border: 1px solid #dce3e5; border-radius: 10px; background: #fff; }
+.total-main, .total-cell { min-width: 0; padding: 14px 16px; }
+.total-main { background: #172229; color: #fff; }
+.total-main span, .total-cell span { display: block; margin-bottom: 6px; color: #6b787d; font-size: 0.75rem; font-weight: 600; }
+.total-main span { color: #b7c4c8; }
+.total-main strong, .total-cell strong { display: block; overflow: hidden; font-size: 1.08rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.total-main strong { font-size: 1.35rem; }
+.total-main small { display: block; margin-top: 5px; color: #b7c4c8; font-size: 0.72rem; }
+.total-cell { border-left: 1px solid #e7ecee; }
+.total-cell.income strong { color: #2377d8; }
+.total-cell.expense strong { color: #d9555d; }
+.total-cell.debt strong { color: #b07817; }
+.total-cell.saving strong { color: #2e8b68; }
+.sheet-wrap, .recent-sheet { overflow: hidden; border: 1px solid #dce3e5; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(24 32 37 / 4%); }
+.sheet-title { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 16px 18px 14px; border-bottom: 1px solid #e7ecee; }
+.sheet-title h2, .recent-heading h2 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.sheet-date { color: #6b787d; font-size: 0.8rem; white-space: nowrap; }
+.sheet-table { overflow-x: auto; }
+.sheet-head, .sheet-row, .section-label { display: grid; grid-template-columns: minmax(0, 1fr) minmax(118px, 180px); align-items: center; min-width: 340px; }
+.sheet-head { padding: 10px 18px; border-bottom: 1px solid #d9e1e3; background: #f7f9f9; color: #647277; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.sheet-head span:last-child, .section-label strong { text-align: right; }
+.section-label { padding: 10px 18px 8px; border-top: 1px solid #e0e6e8; color: #182025; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.section-label strong { font-size: 0.85rem; }
+.section-income .section-label { color: #2377d8; }
+.section-expense .section-label { color: #d9555d; }
+.section-debt .section-label { color: #a56c0c; }
+.section-saving .section-label { color: #2e8b68; }
+.sheet-row { min-height: 46px; padding: 0 18px; border-top: 1px solid #edf0f1; }
+.row-label { overflow: hidden; color: #263238; font-size: 0.95rem; text-overflow: ellipsis; white-space: nowrap; }
+.row-value { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.sheet-input { width: 100%; max-width: 150px; border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 6px 2px; color: #182025; font-size: 1rem; font-variant-numeric: tabular-nums; outline: none; text-align: right; }
+.sheet-input::placeholder { color: #a9b4b8; }
+.sheet-input:focus { border-bottom-color: #2377d8; background: #f4f8fc; }
+.currency { color: #89969a; font-size: 0.8rem; }
+.sheet-grand-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; border-top: 2px solid #172229; background: #f7f9f9; font-weight: 800; }
+.sheet-grand-total strong { font-size: 1.15rem; }
+.sheet-actions { display: flex; gap: 10px; margin: 16px 0 24px; }
+.add-operation { flex: 1; background: #172229; }
+.export-button { min-width: 88px; }
+.recent-heading { padding: 15px 18px 12px; border-bottom: 1px solid #e7ecee; }
+.recent-heading p { margin: 4px 0 0; color: #6b787d; font-size: 0.82rem; }
+.recent-list { display: grid; }
+.recent-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 38px; align-items: center; gap: 10px; min-height: 58px; padding: 8px 14px; border-top: 1px solid #edf0f1; }
+.recent-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 8px; }
+.recent-icon svg { width: 17px; height: 17px; }
+.recent-income { background: #e8f2ff; color: #2377d8; }
+.recent-expense { background: #ffeded; color: #d9555d; }
+.recent-debt { background: #fff5dc; color: #a56c0c; }
+.recent-saving { background: #e9f7ef; color: #2e8b68; }
+.recent-row strong, .recent-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-row strong { font-size: 0.9rem; }
+.recent-row small { margin-top: 2px; color: #7a878b; font-size: 0.75rem; }
+.recent-row b { font-size: 0.9rem; white-space: nowrap; }
+.empty-recent { margin: 0; padding: 22px 18px; color: #7a878b; font-size: 0.875rem; text-align: center; }
+
 /* Keep the compact mobile layout readable and comfortable to tap. */
 @media (max-width: 480px) {
   html { -webkit-text-size-adjust: 100%; }
