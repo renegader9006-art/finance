@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Download, LogOut, Plus, Trash2, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -85,26 +85,42 @@ function LedgerDashboard({ email, accessToken, onSignOut }: { email: string; acc
   const monthKey = `${activeDate.getFullYear()}-${String(activeDate.getMonth() + 1).padStart(2, "0")}`; const month = activeDate.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
   const monthTransactions = useMemo(() => transactions.filter((item) => item.date.startsWith(monthKey)), [transactions, monthKey]);
   const actualFor = (row: SheetRow) => monthTransactions.filter((item) => item.kind === row.kind && (item.category === row.label || item.title === row.label)).reduce((sum, item) => sum + item.amount, 0);
-  const totals = useMemo(() => sheetSections.reduce((result, section) => { result[section.kind] = section.rows.reduce((sum, label) => sum + actualFor({ label, kind: section.kind }), 0); return result; }, { income: 0, expense: 0, debt: 0, saving: 0 } as Record<Kind, number>), [monthTransactions]);
+  const totals = useMemo(() => monthTransactions.reduce((result, item) => { result[item.kind] += item.amount; return result; }, { income: 0, expense: 0, debt: 0, saving: 0 } as Record<Kind, number>), [monthTransactions]);
   const balance = totals.income - totals.expense - totals.debt - totals.saving;
   const dateLabel = activeDate.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
-  function apiFetch(url: string, init: RequestInit = {}) { return fetch(url, { ...init, headers: { ...init.headers, authorization: `Bearer ${accessToken}` } }); }
-  useEffect(() => { apiFetch("/api/ledger").then(async (response) => { if (!response.ok) throw new Error(); return response.json() as Promise<LedgerResponse>; }).then((data) => setTransactions(data.transactions)).catch(() => toast.error("Данные пока недоступны")).finally(() => setLoading(false)); }, [accessToken]);
+  const apiFetch = useCallback((url: string, init: RequestInit = {}) => fetch(url, { ...init, headers: { ...init.headers, authorization: `Bearer ${accessToken}` } }), [accessToken]);
+  useEffect(() => { apiFetch("/api/ledger").then(async (response) => { if (!response.ok) throw new Error(); return response.json() as Promise<LedgerResponse>; }).then((data) => setTransactions(data.transactions)).catch(() => toast.error("Данные пока недоступны")).finally(() => setLoading(false)); }, [apiFetch]);
   async function saveCell(row: SheetRow, rawValue: string) {
-    const amount = Math.round(Number(rawValue.replace(/\s/g, "").replace(",", ".")) || 0); const existing = monthTransactions.find((item) => item.kind === row.kind && (item.category === row.label || item.title === row.label));
-    if (amount === 0 && !existing) return;
-    if (amount === 0 && existing) { const response = await apiFetch(`/api/ledger?id=${encodeURIComponent(existing.id)}`, { method: "DELETE" }); if (!response.ok) { toast.error("Не удалось очистить ячейку"); return; } setTransactions((items) => items.filter((item) => item.id !== existing.id)); return; }
-    const payload = { id: existing?.id ?? crypto.randomUUID(), title: row.label, category: row.label, kind: row.kind, amount, date: `${monthKey}-01` }; const response = await apiFetch("/api/ledger", { method: existing ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-    if (!response.ok) { toast.error("Не удалось сохранить сумму"); return; } setTransactions((items) => existing ? items.map((item) => item.id === existing.id ? { ...item, amount } : item) : [{ ...payload }, ...items]);
+    const amount = Math.round(Number(rawValue.replace(/\s/g, "").replace(",", ".")) || 0);
+    const matches = monthTransactions.filter((item) => item.kind === row.kind && (item.category === row.label || item.title === row.label));
+    if (amount === 0 && !matches.length) return;
+    if (amount === 0) {
+      const responses = await Promise.all(matches.map((item) => apiFetch(`/api/ledger?id=${encodeURIComponent(item.id)}`, { method: "DELETE" })));
+      if (responses.some((response) => !response.ok)) { toast.error("Не удалось очистить ячейку"); return; }
+      const ids = new Set(matches.map((item) => item.id));
+      setTransactions((items) => items.filter((item) => !ids.has(item.id)));
+      return;
+    }
+    const existing = matches[0];
+    const payload = { id: existing?.id ?? crypto.randomUUID(), title: row.label, category: row.label, kind: row.kind, amount, date: `${monthKey}-01` };
+    const response = await apiFetch("/api/ledger", { method: existing ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    if (!response.ok) { toast.error("Не удалось сохранить сумму"); return; }
+    const data = await response.json() as { transaction: Transaction };
+    const duplicateResponses = await Promise.all(matches.slice(1).map((item) => apiFetch(`/api/ledger?id=${encodeURIComponent(item.id)}`, { method: "DELETE" })));
+    if (duplicateResponses.some((item) => !item.ok)) { toast.error("Сумма сохранена, но дубли не удалось объединить"); }
+    const duplicateIds = new Set(matches.slice(1).map((item) => item.id));
+    setTransactions((items) => [data.transaction, ...items.filter((item) => item.id !== existing?.id && !duplicateIds.has(item.id))]);
   }
   async function addTransaction(formData: FormData) {
     const title = String(formData.get("title") ?? "").trim(); const amount = Number(formData.get("amount")); const kind = String(formData.get("kind")) as Kind; const category = String(formData.get("category") ?? title).trim();
     if (!title || !Number.isFinite(amount) || amount <= 0) { toast.error("Заполните название и сумму"); return; }
     const payload = { id: crypto.randomUUID(), title, amount: Math.round(amount), kind, category, date: String(formData.get("date") ?? `${monthKey}-01`) }; const response = await apiFetch("/api/ledger", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-    if (!response.ok) { toast.error("Не удалось сохранить операцию"); return; } setTransactions((items) => [payload, ...items]); setOpen(false); toast.success("Операция добавлена");
+    if (!response.ok) { toast.error("Не удалось сохранить операцию"); return; }
+    const data = await response.json() as { transaction: Transaction };
+    setTransactions((items) => [data.transaction, ...items]); setOpen(false); toast.success("Операция добавлена");
   }
   async function removeTransaction(id: string) { const response = await apiFetch(`/api/ledger?id=${encodeURIComponent(id)}`, { method: "DELETE" }); if (!response.ok) { toast.error("Не удалось удалить операцию"); return; } setTransactions((items) => items.filter((item) => item.id !== id)); toast.success("Операция удалена"); }
-  function exportCsv() { const rows = [["Раздел", "Статья", `Итого за ${dateLabel}`, "Дата"], ...sheetRows.map((row) => [kindLabel(row.kind), row.label, actualFor(row), `${monthKey}-01`]), ["ИТОГО", "Доходы - расходы - долги - накопления", balance, `${monthKey}-01`]]; const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(";")).join("\n"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })); link.download = `balans-${monthKey}.csv`; link.click(); URL.revokeObjectURL(link.href); toast.success("Таблица выгружена"); }
+  function exportCsv() { const rows = [["Дата", "Тип", "Статья", "Название", "Сумма"], ...monthTransactions.map((item) => [item.date, kindLabel(item.kind), item.category, item.title, item.amount]), ["", "ИТОГО", "Остаток", "Доходы - расходы - долги - накопления", balance]]; const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(";")).join("\n"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })); link.download = `balans-${monthKey}.csv`; link.click(); URL.revokeObjectURL(link.href); toast.success("Таблица выгружена"); }
   useEffect(() => { const context = document.modelContext; if (!context?.registerTool) return; const lifecycle = new AbortController(); void Promise.resolve(context.registerTool({ name: "get_month_summary", title: "Итоги месяца", description: "Возвращает суммы доходов, расходов, долгов, накоплений и остатка.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute: () => ({ month: monthKey, ...totals, balance }) }, { signal: lifecycle.signal })).catch(() => undefined); return () => lifecycle.abort(); }, [monthKey, totals, balance]);
   return (
     <main className="ledger-app min-h-screen bg-[#f4f6f5] text-[#182025]"><Toaster position="top-center" />

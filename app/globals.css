@@ -172,7 +172,7 @@ button, input, select { letter-spacing: 0; }
 .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 8px; background: #172229; color: #fff; }
 .ledger-content { width: min(920px, 100%); margin: 0 auto; padding: 20px 16px 44px; }
 .ledger-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.ledger-toolbar h1 { margin: 0; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; letter-spacing: -0.02em; }
+.ledger-toolbar h1 { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: 0; }
 .eyebrow, .sheet-kicker { margin: 0 0 4px; color: #69777d; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .month-switcher { display: flex; min-height: 42px; align-items: center; gap: 2px; border: 1px solid #dce3e5; border-radius: 8px; background: #fff; padding: 2px 4px; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
 .month-switcher button { min-width: 36px; }
@@ -230,6 +230,30 @@ button, input, select { letter-spacing: 0; }
 .recent-row small { margin-top: 2px; color: #7a878b; font-size: 0.75rem; }
 .recent-row b { font-size: 0.9rem; white-space: nowrap; }
 .empty-recent { margin: 0; padding: 22px 18px; color: #7a878b; font-size: 0.875rem; text-align: center; }
+
+@media (max-width: 640px) {
+  .ledger-content { padding: 14px 10px 30px; }
+  .ledger-toolbar { align-items: stretch; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .ledger-toolbar h1 { font-size: 1.5rem; }
+  .month-switcher { justify-content: space-between; }
+  .totals-strip { display: block; margin-bottom: 12px; border-radius: 8px; }
+  .total-main { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 12px 14px; }
+  .total-main span, .total-main strong { margin: 0; }
+  .total-main strong { grid-column: 2; grid-row: 1 / span 2; font-size: 1.15rem; }
+  .total-main small { grid-column: 1; margin: 0; font-size: 0.68rem; }
+  .total-cell { display: none; }
+  .sheet-wrap, .recent-sheet { border-radius: 8px; }
+  .sheet-title { align-items: center; padding: 13px 12px 11px; }
+  .sheet-title h2 { font-size: 1rem; }
+  .sheet-head, .sheet-row, .section-label { grid-template-columns: minmax(0, 1fr) 118px; min-width: 0; }
+  .sheet-head, .section-label { padding-left: 12px; padding-right: 12px; }
+  .sheet-row { min-height: 45px; padding-left: 12px; padding-right: 12px; }
+  .row-label { font-size: 0.9rem; }
+  .sheet-input { max-width: 108px; font-size: 0.95rem; }
+  .sheet-grand-total { padding-left: 12px; padding-right: 12px; }
+  .sheet-actions { margin: 12px 0 18px; }
+  .recent-heading { padding-left: 12px; padding-right: 12px; }
+}
 
 /* Keep the compact mobile layout readable and comfortable to tap. */
 @media (max-width: 480px) {
