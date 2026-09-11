@@ -19,6 +19,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #f5f7f8;
   --foreground: #182025;
   --card: #ffffff;
@@ -94,42 +95,6 @@
     "Liberation Mono", "Courier New", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --card: #171717;
-    --card-foreground: #ededed;
-    --popover: #171717;
-    --popover-foreground: #ededed;
-    --primary: #ededed;
-    --primary-foreground: #171717;
-    --secondary: #262626;
-    --secondary-foreground: #ededed;
-    --muted: #262626;
-    --muted-foreground: #a1a1a1;
-    --accent: #262626;
-    --accent-foreground: #ededed;
-    --destructive: #ff6467;
-    --border: #ffffff1a;
-    --input: #ffffff26;
-    --ring: #737373;
-    --chart-1: #8e51ff;
-    --chart-2: #00bc7d;
-    --chart-3: #fe9a00;
-    --chart-4: #ad46ff;
-    --chart-5: #ff2056;
-    --sidebar: #171717;
-    --sidebar-foreground: #ededed;
-    --sidebar-primary: #8e51ff;
-    --sidebar-primary-foreground: #ededed;
-    --sidebar-accent: #262626;
-    --sidebar-accent-foreground: #ededed;
-    --sidebar-border: #ffffff1a;
-    --sidebar-ring: #737373;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -200,6 +165,58 @@ button, input, select { letter-spacing: 0; }
 }
 
 .mobile-add svg { width: 22px; height: 22px; }
+
+/* Keep the compact mobile layout readable and comfortable to tap. */
+@media (max-width: 480px) {
+  html { -webkit-text-size-adjust: 100%; }
+
+  .text-muted-foreground {
+    color: #56646b;
+  }
+
+  [data-slot="input"],
+  [data-slot="select-trigger"] {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  [data-slot="button"] {
+    min-height: 44px;
+  }
+
+  [data-slot="button"][data-size="icon-sm"] {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .mobile-nav-link {
+    color: #56646b;
+    font-size: 12px;
+  }
+
+  .summary-card .text-xs {
+    opacity: 0.9;
+  }
+
+  #transactions .text-xs {
+    font-size: 0.8rem;
+  }
+
+}
+
+@media (max-width: 360px) {
+  .summary-card {
+    padding: 14px;
+  }
+
+  .summary-card.col-span-2 .amount-value {
+    font-size: 1.3rem;
+  }
+
+  .mobile-nav-link {
+    font-size: 11px;
+  }
+}
 
 @media (min-width: 481px) {
   body { background: #e8edef; }

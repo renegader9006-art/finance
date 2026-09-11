@@ -22,6 +22,7 @@ import type { Session } from "@supabase/supabase-js";
 type Kind = "income" | "expense" | "debt" | "saving";
 type Transaction = { id: string; title: string; category: string; kind: Kind; amount: number; date: string };
 type Budget = { month: string; category: string; amount: number };
+type LedgerResponse = { transactions: Transaction[]; budgets: Budget[]; savingsGoal?: number };
 type WebTool = { name: string; title?: string; description: string; inputSchema: object; annotations?: { readOnlyHint?: boolean; untrustedContentHint?: boolean }; execute: (input: unknown) => unknown | Promise<unknown> };
 
 declare global {
@@ -46,7 +47,7 @@ export function FinanceDashboard() {
   const supabase = useMemo(() => getBrowserSupabase(), []);
 
   useEffect(() => {
-    if (!supabase) { setAuthReady(true); return; }
+    if (!supabase) { void Promise.resolve().then(() => setAuthReady(true)); return; }
     void supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => data.subscription.unsubscribe();
@@ -60,7 +61,7 @@ export function FinanceDashboard() {
 }
 
 function AuthUnavailable() {
-  return <main className="grid min-h-screen place-items-center bg-[#f5f7f8] px-5"><div className="surface w-full max-w-[420px] p-6 text-center"><WalletCards className="mx-auto mb-4 size-10" /><h1 className="text-xl font-semibold">Баланс</h1><p className="mt-2 text-sm text-muted-foreground">Сервис регистрации еще не подключен.</p></div></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f5f7f8] px-5 text-[#182025]"><div className="surface w-full max-w-[420px] p-6 text-center"><WalletCards className="mx-auto mb-4 size-10" /><h1 className="text-xl font-semibold">Баланс</h1><p className="mt-2 text-sm text-muted-foreground">Сервис регистрации еще не подключен.</p></div></main>;
 }
 
 function AuthScreen() {
@@ -72,13 +73,41 @@ function AuthScreen() {
     const password = String(formData.get("password") ?? "");
     if (!email || password.length < 6) { toast.error("Введите email и пароль от 6 символов"); return; }
     setBusy(true);
-    const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password });
-    setBusy(false);
-    if (result.error) { toast.error(result.error.message === "Invalid login credentials" ? "Неверный email или пароль" : result.error.message); return; }
-    if (mode === "register" && !result.data.session) toast.success("Проверьте почту и подтвердите регистрацию");
+    try {
+      const result = mode === "login"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+
+      if (result.error) {
+        toast.error(result.error.message === "Invalid login credentials" ? "Неверный email или пароль" : result.error.message);
+        return;
+      }
+
+      // Supabase returns no session when email confirmation is enabled. Try the
+      // normal password sign-in as well so registration logs in immediately
+      // whenever the project allows unconfirmed sessions.
+      if (mode === "register" && !result.data.session) {
+        const login = await supabase.auth.signInWithPassword({ email, password });
+        if (!login.error && login.data.session) {
+          toast.success("Аккаунт создан, вы вошли в систему");
+          return;
+        }
+
+        const loginError = login.error?.message.toLowerCase() ?? "";
+        if (loginError.includes("email not confirmed") || loginError.includes("confirm")) {
+          toast.success("Аккаунт создан. Подтвердите email, затем войдите");
+        } else {
+          toast.success("Аккаунт создан. Теперь можно войти");
+        }
+      }
+    } catch {
+      toast.error("Не удалось связаться с сервисом. Попробуйте ещё раз");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  return <main className="grid min-h-screen place-items-center bg-[#f5f7f8] px-4 py-8"><Toaster position="top-center" /><div className="w-full max-w-[420px]"><div className="mb-7 flex items-center justify-center gap-3"><span className="grid size-11 place-items-center rounded-md bg-[#172229] text-white"><WalletCards /></span><span className="text-2xl font-semibold">Баланс</span></div><div className="surface p-5"><Tabs defaultValue="login"><TabsList className="mb-5 grid h-11 w-full grid-cols-2"><TabsTrigger value="login">Вход</TabsTrigger><TabsTrigger value="register">Регистрация</TabsTrigger></TabsList><TabsContent value="login"><AuthForm busy={busy} submit={(data) => authenticate("login", data)} button="Войти" /></TabsContent><TabsContent value="register"><AuthForm busy={busy} submit={(data) => authenticate("register", data)} button="Создать аккаунт" /></TabsContent></Tabs></div><p className="mt-4 text-center text-xs text-muted-foreground">Ваши операции доступны только после входа.</p></div></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#f5f7f8] px-4 py-8 text-[#182025]"><Toaster position="top-center" /><div className="w-full max-w-[420px]"><div className="mb-7 flex items-center justify-center gap-3"><span className="grid size-11 place-items-center rounded-md bg-[#172229] text-white"><WalletCards /></span><span className="text-2xl font-semibold">Баланс</span></div><div className="surface p-5"><Tabs defaultValue="login"><TabsList className="mb-5 grid h-11 w-full grid-cols-2"><TabsTrigger value="login">Вход</TabsTrigger><TabsTrigger value="register">Регистрация</TabsTrigger></TabsList><TabsContent value="login"><AuthForm busy={busy} submit={(data) => authenticate("login", data)} button="Войти" /></TabsContent><TabsContent value="register"><AuthForm busy={busy} submit={(data) => authenticate("register", data)} button="Создать аккаунт" /></TabsContent></Tabs></div><p className="mt-4 text-center text-xs text-muted-foreground">Ваши операции доступны только после входа.</p></div></main>;
 }
 
 function AuthForm({ busy, submit, button }: { busy: boolean; submit: (data: FormData) => void | Promise<void>; button: string }) {
@@ -127,7 +156,7 @@ function LedgerDashboard({ email, accessToken, onSignOut }: { email: string; acc
   useEffect(() => {
     apiFetch("/api/ledger").then(async (response) => {
       if (!response.ok) throw new Error();
-      return response.json();
+      return response.json() as Promise<LedgerResponse>;
     }).then((data) => {
       setTransactions(data.transactions);
       setSavingsGoal(data.savingsGoal ?? 0);
@@ -143,7 +172,8 @@ function LedgerDashboard({ email, accessToken, onSignOut }: { email: string; acc
     const transaction = { id: crypto.randomUUID(), title, amount, kind, category: String(formData.get("category") ?? "Другое"), date: String(formData.get("date") ?? `${monthKey}-01`) };
     const response = await apiFetch("/api/ledger", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(transaction) });
     if (!response.ok) { toast.error("Не удалось сохранить операцию"); return; }
-    const data = await response.json(); transaction.id = data.transaction.id;
+    const data = await response.json() as { transaction: { id: string } };
+    transaction.id = data.transaction.id;
     setTransactions((items) => [transaction, ...items]);
     setOpen(false); toast.success("Операция добавлена");
   }
